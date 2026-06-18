@@ -35,7 +35,7 @@ export const CONFIG = {
   PINCH_THRESHOLD: 0.05,
 };
 export const STATS_KEY = 'mf2_highscore';
-export const ASSET_PATH = 'https://minecrflappy2.vercel.app/pjt1/';
+export const ASSET_PATH = 'pjt1/';
 export const CHARACTERS = {
   bee: { crt: 'nvo1.jpg', logo: 'logo1.png', label: 'BEE' },
   parrot: { crt: 'nvo3.png', logo: 'logo3.png', label: 'PARROT' },
