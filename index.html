@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>MinecrFlappy2 - Flappy of Minecraft</title>
+  <link rel="stylesheet" crossorigin href="/src/style.css">
+</head>
+<body>
+  <div id="mainContainer">
+    <div id="gameArea">
+      <canvas id="gameCanvas"></canvas>
+      <div id="ui">
+        <div id="gameOver">Game Over<br><small>Click/Tap to restart</small></div>
+        <div id="pauseOverlay">PAUSED<br><small>Press Space to resume</small></div>
+      </div>
+    </div>
+    <div id="controlArea">
+      <canvas id="logoCanvas" width="400" height="170"></canvas>
+      <div id="char-select">
+        <button class="char-btn active" data-char="bee">BEE</button>
+        <button class="char-btn" data-char="parrot">PARROT</button>
+        <button class="char-btn" data-char="bat">BAT</button>
+      </div>
+      <button id="playBtn">▶ PLAY</button>
+      <div id="webcam-area" style="display:none">
+        <video id="webcamVideo" playsinline style="display:none"></video>
+        <canvas id="webcamCanvas"></canvas>
+      </div>
+      <div id="stats">
+        <div class="stat-row"><span class="stat-label">Score</span><span class="stat-value" id="scoreDisplay">0</span></div>
+        <div class="stat-row"><span class="stat-label">Best</span><span class="stat-value" id="highScoreDisplay">0</span></div>
+      </div>
+      <button class="ctrl-btn" id="btnRestart">↻ CHƠI LẠI</button>
+      <button class="ctrl-btn" id="btnFullscreen">⛶ TOÀN MÀN HÌNH</button>
+      <button class="ctrl-btn" id="btnToggleCam" style="display:none">📷 TẮT CAM</button>
+    </div>
+  </div>
+
+  <div id="loadingOverlay">
+    <div style="font-size:clamp(14px,2vw,24px);margin-bottom:12px">Loading Assets...</div>
+    <div id="loadPct" style="font-size:clamp(28px,5vw,48px);font-weight:bold">0%</div>
+    <div style="margin-top:12px;width:clamp(120px,20vw,240px);height:8px;background:#333;border-radius:4px;overflow:hidden">
+      <div id="loadBar" style="width:0%;height:100%;background:#ffd700;border-radius:4px;transition:width 0.2s"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
