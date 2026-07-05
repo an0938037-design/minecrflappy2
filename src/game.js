@@ -1,4 +1,4 @@
-import { CONFIG, STATS_KEY } from './constants.js';
+import { CONFIG, STATS_KEY, GESTURE } from './constants.js';
 import { AssetLoader } from './asset-loader.js';
 import { Bird } from './bird.js';
 import { Terrain } from './terrain.js';
@@ -146,6 +146,9 @@ export class Game {
 
     this.camera = new Camera(document.getElementById('webcamVideo'));
     this.handTracker = new HandTracker({
+      onGesture: (gesture) => {
+        if (this.state === 'playing') this.bird.updateGesture(gesture.gesture);
+      },
       onHandFound: () => { this.handFound = true; },
       onHandLost: () => { this.handFound = false; },
     });
@@ -320,6 +323,7 @@ export class Game {
       this.bird.render(ctx, this.selectedChar, this.assets);
       this.obstacles.renderFront(ctx);
       this.particles.render(ctx);
+      this.renderGestureNotification(ctx, cw, ch);
     }
 
     ctx.restore();
@@ -407,6 +411,64 @@ export class Game {
     const el = document.getElementById('gameOver');
     if (el) el.style.display = 'none';
     document.getElementById('pauseOverlay').style.display = 'none';
+  }
+
+  renderGestureNotification(ctx, cw, ch) {
+    const gesture = this.bird.currentGesture;
+    if (!gesture || gesture === GESTURE.NONE) return;
+
+    const label = gesture === GESTURE.OPEN ? '✋ OPEN' :
+                  gesture === GESTURE.FIST ? '✊ FIST' :
+                  gesture === GESTURE.PEACE ? '✌ PEACE' :
+                  gesture === GESTURE.POINT ? '☝ POINT' :
+                  gesture === GESTURE.THUMBS_UP ? '👍 UP' :
+                  gesture === GESTURE.PINCH ? '🤏 PINCH' : gesture.toUpperCase();
+
+    const action = gesture === GESTURE.OPEN ? '→ FLAP' :
+                   gesture === GESTURE.FIST ? '→ DROP' :
+                   gesture === GESTURE.PEACE ? '→ PEACE' :
+                   gesture === GESTURE.POINT ? '→ POINT' : '';
+
+    const barY = ch - 40;
+    const barH = 36;
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 8;
+    const tx = cw / 2;
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const text = label + ' ' + action;
+    const m = ctx.measureText(text);
+    const pad = 16;
+    const bw = m.width + pad * 2;
+    const bx = tx - bw / 2;
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath();
+    const r = 8;
+    ctx.moveTo(bx + r, barY);
+    ctx.lineTo(bx + bw - r, barY);
+    ctx.quadraticCurveTo(bx + bw, barY, bx + bw, barY + r);
+    ctx.lineTo(bx + bw, barY + barH - r);
+    ctx.quadraticCurveTo(bx + bw, barY + barH, bx + bw - r, barY + barH);
+    ctx.lineTo(bx + r, barY + barH);
+    ctx.quadraticCurveTo(bx, barY + barH, bx, barY + barH - r);
+    ctx.lineTo(bx, barY + r);
+    ctx.quadraticCurveTo(bx, barY, bx + r, barY);
+    ctx.closePath();
+    ctx.fill();
+
+    const color = gesture === GESTURE.OPEN ? '#44FF44' :
+                  gesture === GESTURE.FIST ? '#FF4444' :
+                  gesture === GESTURE.PEACE ? '#FFFF44' :
+                  gesture === GESTURE.POINT ? '#4488FF' : '#FF8800';
+    ctx.fillStyle = color;
+    ctx.font = 'bold 16px monospace';
+    ctx.fillText(text, tx, barY + barH / 2);
   }
 
   resizeCanvas() {

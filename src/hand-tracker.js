@@ -17,6 +17,7 @@ export class HandTracker {
     this.gestureConfidence = 0;
     this.filters = null;
     this.gestureDetector = new GestureDetector();
+    this.onGesture = options.onGesture || null;
     this.onHandFound = options.onHandFound || null;
     this.onHandLost = options.onHandLost || null;
     this.webcamRafId = null;
@@ -60,6 +61,7 @@ export class HandTracker {
           const gesture = self.gestureDetector.detect(smoothed);
           self.handState = gesture.gesture;
           self.gestureConfidence = gesture.confidence;
+          if (self.onGesture) self.onGesture(gesture);
         } else {
           self._onHandLost();
         }
