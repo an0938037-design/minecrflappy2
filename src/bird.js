@@ -36,6 +36,7 @@ export class Bird {
     this.cooldown = 0;
     this.currentGesture = GESTURE.NONE;
     this.fistBoost = 0;
+    this.prevGesture = GESTURE.NONE;
   }
 
   flap() {
@@ -50,16 +51,20 @@ export class Bird {
       this.flap();
       this.fistBoost = 0;
     } else if (gesture === GESTURE.FIST) {
+      if (this.prevGesture !== GESTURE.FIST) {
+        this.vy = 500;
+      }
       this.fistBoost = 1;
     } else {
       this.fistBoost = 0;
     }
+    this.prevGesture = gesture;
   }
 
   update(dt, groundY) {
     this.vy += this.gravity * dt;
     if (this.fistBoost > 0) {
-      this.vy += 600 * dt * this.fistBoost;
+      this.vy += 800 * dt * this.fistBoost;
     }
     if (this.vy > this.maxFallSpeed) this.vy = this.maxFallSpeed;
     this.y += this.vy * dt;

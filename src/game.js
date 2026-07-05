@@ -415,60 +415,64 @@ export class Game {
 
   renderGestureNotification(ctx, cw, ch) {
     const gesture = this.bird.currentGesture;
-    if (!gesture || gesture === GESTURE.NONE) return;
+    const hasHand = this.handFound;
 
-    const label = gesture === GESTURE.OPEN ? '✋ OPEN' :
-                  gesture === GESTURE.FIST ? '✊ FIST' :
-                  gesture === GESTURE.PEACE ? '✌ PEACE' :
-                  gesture === GESTURE.POINT ? '☝ POINT' :
-                  gesture === GESTURE.THUMBS_UP ? '👍 UP' :
-                  gesture === GESTURE.PINCH ? '🤏 PINCH' : gesture.toUpperCase();
+    if (gesture && gesture !== GESTURE.NONE) {
+      const label = gesture === GESTURE.OPEN ? '✋ OPEN' :
+                    gesture === GESTURE.FIST ? '✊ FIST' :
+                    gesture === GESTURE.PEACE ? '✌ PEACE' :
+                    gesture === GESTURE.POINT ? '☝ POINT' :
+                    gesture === GESTURE.THUMBS_UP ? '👍 UP' :
+                    gesture === GESTURE.PINCH ? '🤏 PINCH' : gesture.toUpperCase();
 
-    const action = gesture === GESTURE.OPEN ? '→ FLAP' :
-                   gesture === GESTURE.FIST ? '→ DROP' :
-                   gesture === GESTURE.PEACE ? '→ PEACE' :
-                   gesture === GESTURE.POINT ? '→ POINT' : '';
+      const action = gesture === GESTURE.OPEN ? '→ FLAP ↑' :
+                     gesture === GESTURE.FIST ? '→ DROP ↓' : '';
 
-    const barY = ch - 40;
-    const barH = 36;
+      const barY = ch - 44;
+      const barH = 36;
+      const tx = cw / 2;
+      ctx.font = 'bold 17px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const text = label + ' ' + action;
+      const pad = 18;
+      const bw = ctx.measureText(text).width + pad * 2;
+      const bx = tx - bw / 2;
 
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.shadowColor = 'rgba(0,0,0,0.5)';
-    ctx.shadowBlur = 8;
-    const tx = cw / 2;
-    ctx.font = 'bold 16px monospace';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.beginPath();
+      const r2 = 10;
+      ctx.moveTo(bx + r2, barY);
+      ctx.lineTo(bx + bw - r2, barY);
+      ctx.quadraticCurveTo(bx + bw, barY, bx + bw, barY + r2);
+      ctx.lineTo(bx + bw, barY + barH - r2);
+      ctx.quadraticCurveTo(bx + bw, barY + barH, bx + bw - r2, barY + barH);
+      ctx.lineTo(bx + r2, barY + barH);
+      ctx.quadraticCurveTo(bx, barY + barH, bx, barY + barH - r2);
+      ctx.lineTo(bx, barY + r2);
+      ctx.quadraticCurveTo(bx, barY, bx + r2, barY);
+      ctx.closePath();
+      ctx.fill();
 
-    const text = label + ' ' + action;
-    const m = ctx.measureText(text);
-    const pad = 16;
-    const bw = m.width + pad * 2;
-    const bx = tx - bw / 2;
+      const color = gesture === GESTURE.OPEN ? '#44FF44' :
+                    gesture === GESTURE.FIST ? '#FF4444' :
+                    gesture === GESTURE.PEACE ? '#FFFF44' :
+                    gesture === GESTURE.POINT ? '#4488FF' : '#FF8800';
+      ctx.fillStyle = color;
+      ctx.shadowColor = color;
+      ctx.shadowBlur = 10;
+      ctx.font = 'bold 17px monospace';
+      ctx.fillText(text, tx, barY + barH / 2);
+      ctx.shadowBlur = 0;
+    }
 
-    ctx.shadowBlur = 0;
-    ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.beginPath();
-    const r = 8;
-    ctx.moveTo(bx + r, barY);
-    ctx.lineTo(bx + bw - r, barY);
-    ctx.quadraticCurveTo(bx + bw, barY, bx + bw, barY + r);
-    ctx.lineTo(bx + bw, barY + barH - r);
-    ctx.quadraticCurveTo(bx + bw, barY + barH, bx + bw - r, barY + barH);
-    ctx.lineTo(bx + r, barY + barH);
-    ctx.quadraticCurveTo(bx, barY + barH, bx, barY + barH - r);
-    ctx.lineTo(bx, barY + r);
-    ctx.quadraticCurveTo(bx, barY, bx + r, barY);
-    ctx.closePath();
-    ctx.fill();
-
-    const color = gesture === GESTURE.OPEN ? '#44FF44' :
-                  gesture === GESTURE.FIST ? '#FF4444' :
-                  gesture === GESTURE.PEACE ? '#FFFF44' :
-                  gesture === GESTURE.POINT ? '#4488FF' : '#FF8800';
-    ctx.fillStyle = color;
-    ctx.font = 'bold 16px monospace';
-    ctx.fillText(text, tx, barY + barH / 2);
+    if (!hasHand) {
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.font = '12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Show your hand to the camera', cw / 2, 20);
+    }
   }
 
   resizeCanvas() {
