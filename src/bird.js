@@ -1,4 +1,4 @@
-import { CONFIG, GESTURE } from './constants.js';
+import { CONFIG } from './constants.js';
 
 export class Bird {
   constructor() {
@@ -9,11 +9,9 @@ export class Bird {
     this.h = 0;
     this.gravity = 0;
     this.jumpFull = 0;
-    this.jumpHand = 0;
     this.maxFallSpeed = 0;
     this.cooldown = 0;
     this.cooldownMax = CONFIG.COOLDOWN_MAX;
-    this.isOpen = false;
     this.rotation = 0;
     this.wingPhase = 0;
     this.wingTimer = 0;
@@ -27,29 +25,22 @@ export class Bird {
     this.y = canvasH * 0.35;
     this.vy = 0;
     this.rotation = 0;
-    this.isOpen = false;
     this.wingPhase = 0;
     this.wingTimer = 0;
     const scale = canvasH / 600;
     this.gravity = CONFIG.GRAVITY_SCALE * scale;
     this.jumpFull = CONFIG.JUMP_FULL * scale;
-    this.jumpHand = CONFIG.JUMP_HAND * scale;
     this.maxFallSpeed = CONFIG.MAX_FALL_SPEED * scale;
     this.cooldown = 0;
   }
 
-  flap(useFullJump) {
+  flap() {
     if (this.cooldown > 0) return;
-    this.vy = useFullJump !== false ? this.jumpFull : this.jumpHand;
+    this.vy = this.jumpFull;
     this.cooldown = this.cooldownMax;
   }
 
-  updateGesture(gesture) {
-    this.isOpen = gesture === GESTURE.OPEN;
-  }
-
   update(dt, groundY) {
-    if (this.isOpen) this.flap(false);
     this.vy += this.gravity * dt;
     if (this.vy > this.maxFallSpeed) this.vy = this.maxFallSpeed;
     this.y += this.vy * dt;

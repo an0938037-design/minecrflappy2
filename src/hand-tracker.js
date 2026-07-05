@@ -1,25 +1,22 @@
-import { CONFIG, GESTURE } from './constants.js';
+import { GESTURE } from './constants.js';
 import { GestureDetector } from './gesture-detector.js';
-import { OneEuroFilter, HandPositionFilter } from './filters.js';
-import { Camera } from './camera.js';
+import { OneEuroFilter } from './filters.js';
 import { HandRenderer } from './hand-renderer.js';
+
+const FILTER_FREQ = 2;
+const FILTER_BETA = 0.004;
+const NUM_LANDMARKS = 21;
 
 export class HandTracker {
   constructor(options = {}) {
     this.hands = null;
     this.running = false;
-    this.handLandmarks = null;
     this.smoothedLandmarks = null;
-    this.prevSmoothedLandmarks = null;
     this.hasHand = false;
     this.handState = GESTURE.NONE;
     this.gestureConfidence = 0;
-    this.fingerStates = [];
-    this.oneEuroFilters = null;
-    this.handFilter2D = new HandPositionFilter();
+    this.filters = null;
     this.gestureDetector = new GestureDetector();
-    this.onResults = options.onResults || null;
-    this.onGesture = options.onGesture || null;
     this.onHandFound = options.onHandFound || null;
     this.onHandLost = options.onHandLost || null;
     this.webcamRafId = null;
@@ -30,52 +27,47 @@ export class HandTracker {
     try {
       if (typeof Hands === 'undefined') throw new Error('MediaPipe Hands library not loaded');
       this.hands = new Hands({
-        locateFile: (file) => 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + file,
+        locateFile: (f) => 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + f,
       });
       this.hands.setOptions({
         maxNumHands: 1,
         modelComplexity: 1,
-        minDetectionConfidence: CONFIG.MIN_DETECTION_CONFIDENCE,
-        minTrackingConfidence: CONFIG.MIN_TRACKING_CONFIDENCE,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5,
       });
 
       const self = this;
       this.hands.onResults((results) => {
         if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
           const raw = results.multiHandLandmarks[0];
-          if (!self.oneEuroFilters) self.initFilters();
-          const now = performance.now();
+          if (!self.filters) self._initFilters();
           const smoothed = [];
-          for (let i = 0; i < raw.length; i++) {
-            const lm = raw[i];
+          for (let i = 0; i < NUM_LANDMARKS; i++) {
             smoothed.push({
-              x: self.oneEuroFilters[i].x.filter(lm.x),
-              y: self.oneEuroFilters[i].y.filter(lm.y),
-              z: lm.z,
+              x: self.filters[i][0].filter(raw[i].x),
+              y: self.filters[i][1].filter(raw[i].y),
+              z: raw[i].z,
             });
           }
-          self.prevSmoothedLandmarks = self.smoothedLandmarks;
           self.smoothedLandmarks = smoothed;
-          self.handLandmarks = raw;
           self.hasHand = true;
+
           if (!self.handFoundNotified) {
             self.handFoundNotified = true;
-            if (self.onHandFound) self.onHandFound();
+            self.onHandFound?.();
           }
+
           const gesture = self.gestureDetector.detect(smoothed);
           self.handState = gesture.gesture;
           self.gestureConfidence = gesture.confidence;
-          self.fingerStates = gesture.fingerStates;
-          if (self.onGesture) self.onGesture(gesture);
-          if (self.onResults) self.onResults(self.smoothedLandmarks, gesture);
         } else {
-          self.onHandLostInternal();
+          self._onHandLost();
         }
       });
 
       camera.onFrame = async (video, shouldProcess) => {
         if (shouldProcess && self.hands && self.running) {
-          try { await self.hands.send({ image: video }); } catch { /* ignore */ }
+          try { await self.hands.send({ image: video }); } catch {}
         }
       };
 
@@ -87,55 +79,39 @@ export class HandTracker {
     }
   }
 
-  initFilters() {
-    this.oneEuroFilters = [];
-    for (let i = 0; i < 21; i++) {
-      this.oneEuroFilters.push({
-        x: new OneEuroFilter(1.5, 0.007),
-        y: new OneEuroFilter(1.5, 0.007),
-      });
+  _initFilters() {
+    this.filters = [];
+    for (let i = 0; i < NUM_LANDMARKS; i++) {
+      this.filters.push([
+        new OneEuroFilter(FILTER_FREQ, FILTER_BETA),
+        new OneEuroFilter(FILTER_FREQ, FILTER_BETA),
+      ]);
     }
   }
 
-  onHandLostInternal() {
+  _onHandLost() {
     this.hasHand = false;
-    this.handLandmarks = null;
     this.smoothedLandmarks = null;
     this.handState = GESTURE.NONE;
     this.gestureConfidence = 0;
     this.handFoundNotified = false;
-    if (this.onHandLost) this.onHandLost();
-  }
-
-  getGesture() {
-    return {
-      gesture: this.handState,
-      confidence: this.gestureConfidence,
-      fingerStates: this.fingerStates,
-      hasHand: this.hasHand,
-      landmarks: this.smoothedLandmarks,
-      rawLandmarks: this.handLandmarks,
-    };
+    this.onHandLost?.();
   }
 
   reset() {
     this.hasHand = false;
-    this.handLandmarks = null;
     this.smoothedLandmarks = null;
-    this.prevSmoothedLandmarks = null;
     this.handState = GESTURE.NONE;
     this.gestureConfidence = 0;
-    this.fingerStates = [];
-    if (this.oneEuroFilters) {
-      for (const f of this.oneEuroFilters) { f.x.reset(); f.y.reset(); }
+    if (this.filters) {
+      for (const pair of this.filters) { pair[0].reset(); pair[1].reset(); }
     }
-    this.handFilter2D.reset();
     this.handFoundNotified = false;
   }
 
   stop() {
     this.running = false;
-    if (this.hands) { try { this.hands.close(); } catch { /* ignore */ } }
+    if (this.hands) { try { this.hands.close(); } catch {} }
     this.reset();
   }
 
@@ -152,17 +128,23 @@ export class HandTracker {
         self.webcamRafId = requestAnimationFrame(loop);
         return;
       }
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      if (canvas.width !== w || canvas.height !== h) {
+        canvas.width = w;
+        canvas.height = h;
+      }
       ctx.save();
-      ctx.translate(canvas.width, 0);
+      ctx.translate(w, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(video, 0, 0, w, h);
       ctx.restore();
 
       if (self.smoothedLandmarks) {
-        const gestureInfo = { gesture: self.handState, confidence: self.gestureConfidence };
-        renderer.render(self.smoothedLandmarks, gestureInfo);
+        renderer.render(self.smoothedLandmarks, {
+          gesture: self.handState,
+          confidence: self.gestureConfidence,
+        });
       }
       self.webcamRafId = requestAnimationFrame(loop);
     };

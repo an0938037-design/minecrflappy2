@@ -1,4 +1,4 @@
-import { CONFIG, STATS_KEY, GESTURE } from './constants.js';
+import { CONFIG, STATS_KEY } from './constants.js';
 import { AssetLoader } from './asset-loader.js';
 import { Bird } from './bird.js';
 import { Terrain } from './terrain.js';
@@ -146,9 +146,6 @@ export class Game {
 
     this.camera = new Camera(document.getElementById('webcamVideo'));
     this.handTracker = new HandTracker({
-      onGesture: (gesture) => {
-        if (this.state === 'playing') this.bird.updateGesture(gesture.gesture);
-      },
       onHandFound: () => { this.handFound = true; },
       onHandLost: () => { this.handFound = false; },
     });
